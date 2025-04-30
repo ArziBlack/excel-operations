@@ -6,3 +6,16 @@ edition = "2024"
 [dependencies]
 calamine = "0.23.1"  # For reading Excel files
 rust_xlsxwriter = "0.62.0"  # For writing Excel files
+chrono = "0.4.34"  # For date and time handling
+
+[lib]
+name = "xcel_operations"
+path = "src/lib.rs"
+
+[[bin]]
+name = "xcel_operations"
+path = "src/main.rs"
+
+[[bin]]
+name = "spill_example"
+path = "src/bin/spill_example.rs"
