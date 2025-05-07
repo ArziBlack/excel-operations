@@ -1,87 +1,87 @@
-use std::path::Path;
+use serde::{Deserialize, Serialize};
+use chrono::{DateTime, Utc};
 use std::error::Error;
-use chrono::{Local, NaiveDate, NaiveTime};
+use std::path::Path;
 use calamine::{open_workbook, Reader, Xlsx};
 use rust_xlsxwriter::{Workbook, Format, Color, FormatBorder};
 
-/// Represents a spill incident to be recorded in the register
-/// Fields match the structure of the spill_register.xlsx file
+#[derive(Debug, Serialize, Deserialize)]
 pub struct SpillIncident {
-    pub reference_number: String,
-    pub epage_code: Option<String>,
-    pub facility_equipment: String,
-    pub facility_category: String,
+    #[serde(rename = "_id")]
+    pub id: String,
+    pub spill_serial_no: String,
+    pub facility_or_equipment: String,
     pub location: String,
-    pub closeby_facility: Option<String>,
-    pub area: String,
-    pub lga: String,
-    pub state: String,
+    #[serde(rename = "date_of_incident_or_spill")]
+    pub incident_date: DateTime<Utc>,
+    #[serde(default)]
+    pub coordinates: Option<String>,
+    #[serde(rename = "lat")]
     pub latitude: Option<f64>,
+    #[serde(rename = "long")]
     pub longitude: Option<f64>,
-    pub incident_date: NaiveDate,
-    pub incident_time: Option<NaiveTime>,
-    pub observed_date: Option<NaiveDate>,
-    pub observed_time: Option<NaiveTime>,
-    pub stopped_date: Option<NaiveDate>,
-    pub contained_date: Option<NaiveDate>,
-    pub contained_time: Option<NaiveTime>,
-    pub oml_opl: Option<String>,
-    pub spill_cause: String,
-    pub spill_category: String,
-    pub cause_description: Option<String>,
-    pub responsibility: String,
-    pub quantity_spilled_bbls: f64,
-    pub quantity_recovered_bbls: Option<f64>,
-    pub tiered_level: Option<String>,
-    pub cleanup_required: Option<bool>,
-    pub cleanup_method: Option<String>,
-    pub cleanup_contractor: Option<String>,
-    pub cleanup_completion_status: Option<f64>,  // Percentage
-    pub cleanup_cost_ngn: Option<f64>,
-    pub remediation_required: Option<bool>,
-    pub remediation_method: Option<String>,
-    pub communities_impacted: Option<String>,
-    pub remarks: Option<String>,
+    pub spill_status: String,
+    pub description_of_spill_causes: String,
+    pub estimated_qty_spilled_or_leaked: f64,
+    pub severity: String,
+    pub extent_of_pollution: String,
+    pub precaution_measures: String,
+    pub client_id: String,
+    #[serde(rename = "OPL_OML_no_unit_desc")]
+    pub opl_oml_no: Option<i32>,
+    pub date_of_incident_or_spill_observed: Option<DateTime<Utc>>,
+    pub date_of_incident_or_spill_occurred: Option<DateTime<Utc>>,
+    pub incident_cause_of_spill_or_leakage: Option<String>,
+    pub incident_type_of_spill_category: Option<String>,
+    pub nearest_town: Option<String>,
+    pub operational_area: Option<String>,
+    pub other_cause_of_spill_or_leak: Option<String>,
+    pub other_type_of_spill: Option<String>,
+    pub state: Option<String>,
+    pub time_of_incident_or_spill_observed: Option<String>,
+    pub time_of_incident_or_spill_occurred: Option<String>,
+    pub type_of_operation_at_spill_site: Option<String>,
+    pub coordinate_format: Option<String>,
+    #[serde(rename = "createdAt")]
+    pub created_at: DateTime<Utc>,
+    #[serde(rename = "updatedAt")]
+    pub updated_at: DateTime<Utc>,
 }
 
 impl Default for SpillIncident {
     fn default() -> Self {
         Self {
-            reference_number: String::new(),
-            epage_code: None,
-            facility_equipment: String::new(),
-            facility_category: String::new(),
+            id: String::new(),
+            spill_serial_no: String::new(),
+            facility_or_equipment: String::new(),
             location: String::new(),
-            closeby_facility: None,
-            area: String::new(),
-            lga: String::new(),
-            state: String::new(),
+            incident_date: Utc::now(),
+            coordinates: None,
             latitude: None,
             longitude: None,
-            incident_date: Local::now().date_naive(),
-            incident_time: None,
-            observed_date: None,
-            observed_time: None,
-            stopped_date: None,
-            contained_date: None,
-            contained_time: None,
-            oml_opl: None,
-            spill_cause: String::new(),
-            spill_category: String::new(),
-            cause_description: None,
-            responsibility: String::new(),
-            quantity_spilled_bbls: 0.0,
-            quantity_recovered_bbls: None,
-            tiered_level: None,
-            cleanup_required: None,
-            cleanup_method: None,
-            cleanup_contractor: None,
-            cleanup_completion_status: None,
-            cleanup_cost_ngn: None,
-            remediation_required: None,
-            remediation_method: None,
-            communities_impacted: None,
-            remarks: None,
+            spill_status: "ONGOING".to_string(),
+            description_of_spill_causes: String::new(),
+            estimated_qty_spilled_or_leaked: 0.0,
+            severity: "LOW".to_string(),
+            extent_of_pollution: String::new(),
+            precaution_measures: String::new(),
+            client_id: String::new(),
+            opl_oml_no: None,
+            date_of_incident_or_spill_observed: None,
+            date_of_incident_or_spill_occurred: None,
+            incident_cause_of_spill_or_leakage: None,
+            incident_type_of_spill_category: None,
+            nearest_town: None,
+            operational_area: None,
+            other_cause_of_spill_or_leak: None,
+            other_type_of_spill: None,
+            state: None,
+            time_of_incident_or_spill_observed: None,
+            time_of_incident_or_spill_occurred: None,
+            type_of_operation_at_spill_site: None,
+            coordinate_format: None,
+            created_at: Utc::now(),
+            updated_at: Utc::now(),
         }
     }
 }
@@ -89,11 +89,6 @@ impl Default for SpillIncident {
 /// Adds a new spill incident to the spill register
 pub fn add_spill_incident(incident: SpillIncident) -> Result<(), Box<dyn Error>> {
     let file_path = Path::new("spill_register.xlsx");
-    
-    // Check if file exists, if not create it with headers
-    // if !file_path.exists() {
-    //     create_spill_register()?;
-    // }
     
     // First read the existing file to find the next empty row
     let next_row = find_next_empty_row(file_path)?;
@@ -103,30 +98,20 @@ pub fn add_spill_incident(incident: SpillIncident) -> Result<(), Box<dyn Error>>
     
     // Format the date as string (since we can't use DateTime directly)
     let incident_date_str = incident.incident_date.format("%Y-%m-%d").to_string();
-    let incident_time_str = incident.incident_time.map_or(String::new(), |t| t.format("%H:%M:%S").to_string());
     
     // Get a mutable reference to the first worksheet
-    // We need to use this approach since rust_xlsxwriter's API requires a mutable worksheet
     let worksheet = &mut workbook.worksheets_mut()[0];
     
     // Write the data to the next empty row
-    worksheet.write_string(next_row, 0, &incident.reference_number)?;
-    
-    if let Some(epage) = &incident.epage_code {
-        worksheet.write_string(next_row, 1, epage)?;
-    }
-    
-    worksheet.write_string(next_row, 2, &incident.facility_equipment)?;
-    worksheet.write_string(next_row, 3, &incident.facility_category)?;
+    worksheet.write_string(next_row, 0, &incident.spill_serial_no)?;
+    worksheet.write_string(next_row, 2, &incident.facility_or_equipment)?;
     worksheet.write_string(next_row, 4, &incident.location)?;
     
-    if let Some(closeby) = &incident.closeby_facility {
-        worksheet.write_string(next_row, 5, closeby)?;
-    }
+    worksheet.write_string(next_row, 11, &incident_date_str)?;
     
-    worksheet.write_string(next_row, 6, &incident.area)?;
-    worksheet.write_string(next_row, 7, &incident.lga)?;
-    worksheet.write_string(next_row, 8, &incident.state)?;
+    if let Some(state) = &incident.state {
+        worksheet.write_string(next_row, 8, state)?;
+    }
     
     if let Some(lat) = incident.latitude {
         worksheet.write_number(next_row, 9, lat)?;
@@ -136,97 +121,22 @@ pub fn add_spill_incident(incident: SpillIncident) -> Result<(), Box<dyn Error>>
         worksheet.write_number(next_row, 10, long)?;
     }
     
-    worksheet.write_string(next_row, 11, &incident_date_str)?;
-    
-    if let Some(observed_date) = incident.observed_date {
-        worksheet.write_string(next_row, 12, &observed_date.format("%Y-%m-%d").to_string())?;
+    if let Some(spill_type) = &incident.incident_type_of_spill_category {
+        worksheet.write_string(next_row, 19, spill_type)?;
     }
     
-    if !incident_time_str.is_empty() {
-        worksheet.write_string(next_row, 13, &incident_time_str)?;
+    if let Some(spill_cause) = &incident.incident_cause_of_spill_or_leakage {
+        worksheet.write_string(next_row, 20, spill_cause)?;
     }
     
-    if let Some(observed_time) = incident.observed_time {
-        worksheet.write_string(next_row, 14, &observed_time.format("%H:%M:%S").to_string())?;
-    }
+    worksheet.write_number(next_row, 23, incident.estimated_qty_spilled_or_leaked)?;
     
-    if let Some(stopped_date) = incident.stopped_date {
-        worksheet.write_string(next_row, 15, &stopped_date.format("%Y-%m-%d").to_string())?;
-    }
+    // For now, we'll use the same value for recovered quantity since it's not available
+    worksheet.write_number(next_row, 24, incident.estimated_qty_spilled_or_leaked)?;
     
-    if let Some(contained_date) = incident.contained_date {
-        worksheet.write_string(next_row, 16, &contained_date.format("%Y-%m-%d").to_string())?;
-    }
+    worksheet.write_string(next_row, 62, &incident.spill_status)?;
     
-    if let Some(contained_time) = incident.contained_time {
-        worksheet.write_string(next_row, 17, &contained_time.format("%H:%M:%S").to_string())?;
-    }
-    
-    if let Some(oml_opl) = &incident.oml_opl {
-        worksheet.write_string(next_row, 18, oml_opl)?;
-    }
-    
-    worksheet.write_string(next_row, 19, &incident.spill_cause)?;
-    worksheet.write_string(next_row, 20, &incident.spill_category)?;
-    
-    if let Some(desc) = &incident.cause_description {
-        worksheet.write_string(next_row, 21, desc)?;
-    }
-    
-    worksheet.write_string(next_row, 22, &incident.responsibility)?;
-    worksheet.write_number(next_row, 23, incident.quantity_spilled_bbls)?;
-    
-    if let Some(recovered) = incident.quantity_recovered_bbls {
-        worksheet.write_number(next_row, 24, recovered)?;
-    }
-    
-    if let Some(tier) = &incident.tiered_level {
-        worksheet.write_string(next_row, 25, tier)?;
-    }
-    
-    // Skip to cleanup required column (46)
-    if let Some(cleanup_required) = incident.cleanup_required {
-        worksheet.write_string(next_row, 45, if cleanup_required { "Yes" } else { "No" })?;
-    }
-    
-    if let Some(method) = &incident.cleanup_method {
-        worksheet.write_string(next_row, 49, method)?;
-    }
-    
-    if let Some(contractor) = &incident.cleanup_contractor {
-        worksheet.write_string(next_row, 51, contractor)?;
-    }
-    
-    if let Some(completion) = incident.cleanup_completion_status {
-        worksheet.write_number(next_row, 62, completion)?;
-    }
-    
-    if let Some(cost) = incident.cleanup_cost_ngn {
-        worksheet.write_number(next_row, 56, cost)?;
-    }
-    
-    // Skip to remediation required column (69)
-    if let Some(remediation_required) = incident.remediation_required {
-        worksheet.write_string(next_row, 68, if remediation_required { "Yes" } else { "No" })?;
-    }
-    
-    if let Some(method) = &incident.remediation_method {
-        worksheet.write_string(next_row, 69, method)?;
-    }
-    
-    if let Some(communities) = &incident.communities_impacted {
-        worksheet.write_string(next_row, 86, communities)?;
-    }
-    
-    if let Some(remarks) = &incident.remarks {
-        // Add remarks to a general remarks column if available
-        // This might need adjustment based on the actual Excel structure
-        worksheet.write_string(next_row, 42, remarks)?;
-    }
-    
-    // Save the workbook
-    workbook.save("spill_register.xlsx")?;
-    println!("Spill incident added successfully at row {}", next_row + 1);
+    worksheet.write_string(next_row, 42, &incident.description_of_spill_causes)?;
     
     Ok(())
 }

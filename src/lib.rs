@@ -1,2 +1,3 @@
-// Export the spill_register module
+// Export modules
 pub mod spill_register;
+pub mod spill_service;
