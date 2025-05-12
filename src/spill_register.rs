@@ -88,7 +88,12 @@ impl Default for SpillIncident {
 
 /// Adds a new spill incident to the spill register
 pub fn add_spill_incident(incident: SpillIncident) -> Result<(), Box<dyn Error>> {
-    let file_path = Path::new("spill_register.xlsx");
+    let file_path = Path::new("C:/spill_register.xlsx");
+
+     // Check if file exists, if not create it with headers
+    if !file_path.exists() {
+        create_spill_register()?;
+    }
     
     // First read the existing file to find the next empty row
     let next_row = find_next_empty_row(file_path)?;
@@ -275,7 +280,7 @@ fn create_spill_register() -> Result<Workbook, Box<dyn Error>> {
     }
     
     // Save the workbook
-    workbook.save("spill_register.xlsx")?;
+    workbook.save("C://spill_register.xlsx")?;
     println!("Created new spill register file: spill_register.xlsx");
     
     Ok(workbook)
