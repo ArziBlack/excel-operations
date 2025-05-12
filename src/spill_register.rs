@@ -88,7 +88,7 @@ impl Default for SpillIncident {
 
 /// Adds a new spill incident to the spill register
 pub fn add_spill_incident(incident: SpillIncident) -> Result<(), Box<dyn Error>> {
-    let file_path = Path::new("C:/spill_register.xlsx");
+    let file_path = std::env::current_dir()?.join("spill_register.xlsx");
 
      // Check if file exists, if not create it with headers
     if !file_path.exists() {
@@ -96,10 +96,10 @@ pub fn add_spill_incident(incident: SpillIncident) -> Result<(), Box<dyn Error>>
     }
     
     // First read the existing file to find the next empty row
-    let next_row = find_next_empty_row(file_path)?;
+    let next_row = find_next_empty_row(&file_path)?;
     
     // Now open the file for writing
-    let mut workbook = open_existing_workbook(file_path)?;
+    let mut workbook = open_existing_workbook(&file_path)?;
     
     // Format the date as string (since we can't use DateTime directly)
     let incident_date_str = incident.incident_date.format("%Y-%m-%d").to_string();
@@ -143,6 +143,9 @@ pub fn add_spill_incident(incident: SpillIncident) -> Result<(), Box<dyn Error>>
     
     worksheet.write_string(next_row, 42, &incident.description_of_spill_causes)?;
     
+    // Save the workbook
+    workbook.save(file_path)?;
+
     Ok(())
 }
 
@@ -280,7 +283,7 @@ fn create_spill_register() -> Result<Workbook, Box<dyn Error>> {
     }
     
     // Save the workbook
-    workbook.save("C://spill_register.xlsx")?;
+    workbook.save("spill_register.xlsx")?;
     println!("Created new spill register file: spill_register.xlsx");
     
     Ok(workbook)
