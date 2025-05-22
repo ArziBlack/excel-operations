@@ -23,15 +23,16 @@ fn main() -> Result<(), Box<dyn Error>> {
     println!("\nExample 3: Reading, modifying, and writing an Excel file");
     modify_excel_example()?;
 
-    // Load and process the spill data
-    load_and_process_spill_data()?;
+    // Load and process the spill data dynamically
+    println!("\nExample 4: Loading and processing spill data dynamically");
+    load_and_process_spill_data_dynamic()?;
 
     println!("\nAll examples completed successfully!");
     println!("Files created:");
     println!("- data.xlsx (sample data)");
     println!("- output.xlsx (from write example)");
     println!("- modified_data.xlsx (from modify example)");
-    println!("- loaded_register.xlsx (from load and process spill data)");
+    println!("- loaded_register_dynamic.xlsx (from load and process spill data dynamically)");
 
     Ok(())
 }
@@ -198,7 +199,7 @@ fn create_sample_file() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-fn load_and_process_spill_data() -> Result<(), Box<dyn Error>> {
+fn load_and_process_spill_data_dynamic() -> Result<(), Box<dyn Error>> {
     // Path to the Excel file
     let path = Path::new("Oil_Spill_2013.xlsx");
     
@@ -217,98 +218,63 @@ fn load_and_process_spill_data() -> Result<(), Box<dyn Error>> {
         let mut new_workbook = Workbook::new();
         let worksheet = new_workbook.add_worksheet();
 
-        // Write headers
-        let headers = ["ID", "Spill Serial No", "Facility or Equipment", "Location", "Incident Date", "Coordinates", "Latitude", "Longitude", "Spill Status", "Description of Spill Causes", "Estimated Qty Spilled or Leaked", "Severity", "Extent of Pollution", "Precaution Measures", "Client ID", "OPL/OML No", "Date of Incident Observed", "Date of Incident Occurred", "Incident Cause", "Incident Type", "Nearest Town", "Operational Area", "Other Cause", "Other Type", "State", "Time of Incident Observed", "Time of Incident Occurred", "Type of Operation", "Coordinate Format", "Created At", "Updated At"];
-        for (col, header) in headers.iter().enumerate() {
-            worksheet.write_string(0, col as u16, *header)?;
+        // Read headers from the first row
+        let dynamic_headers: Vec<String> = range.rows().next().unwrap_or(&[]).iter().map(|cell| cell.to_string()).collect();
+        println!("Headers read: {:?}", dynamic_headers);
+
+        // Define expected field names from SpillIncident (adjust these based on your struct)
+        let expected_fields = vec![
+            "ID", "Spill Serial No", "Facility or Equipment", "Location", "Incident Date", 
+            "Coordinates", "Latitude", "Longitude", "Spill Status", "Description of Spill Causes", 
+            "Estimated Qty Spilled or Leaked", "Severity", "Extent of Pollution", "Precaution Measures", 
+            "Client ID", "OPL/OML No", "Date of Incident Observed", "Date of Incident Occurred", 
+            "Incident Cause", "Incident Type", "Nearest Town", "Operational Area", "Other Cause", 
+            "Other Type", "State", "Time of Incident Observed", "Time of Incident Occurred", 
+            "Type of Operation", "Coordinate Format", "Created At", "Updated At"
+        ];
+
+        // Find indices of matching headers (case-insensitive)
+        let matching_indices: Vec<(usize, String)> = dynamic_headers.iter().enumerate()
+            .filter(|(_, header)| expected_fields.iter().any(|f| f.to_lowercase() == header.to_lowercase()))
+            .map(|(i, header)| (i, header.clone()))
+            .collect();
+        println!("Matching headers and indices: {:?}", matching_indices);
+
+        // Write headers for matching fields in new workbook
+        for (col_idx, (_, header)) in matching_indices.iter().enumerate() {
+            worksheet.write_string(0, col_idx as u16, header)?;
         }
 
-        // Iterate through rows and cells
-        for (row_index, row) in range.rows().enumerate() {
-            println!("Processing row {}: {:?}", row_index, row);
-            if row_index == 0 {
-                continue; // Skip header row
+        // Iterate through data rows and extract only matching fields
+        for (row_index, row) in range.rows().enumerate().skip(1) { // Skip header row
+            println!("Processing row {} with {} cells", row_index, row.len());
+            let mut row_data = vec![];
+            for &(orig_index, _) in &matching_indices {
+                if let Some(cell) = row.get(orig_index) {
+                    row_data.push(cell.to_string());
+                } else {
+                    row_data.push("".to_string());
+                }
             }
+            println!("Extracted data for row {}: {:?}", row_index, row_data);
 
-            // Extract values matching SpillIncident struct
-            let id = row.get(0).and_then(|c| c.get_string()).unwrap_or("").to_string();
-            let spill_serial_no = row.get(1).and_then(|c| c.get_string()).unwrap_or("").to_string();
-            let facility_or_equipment = row.get(2).and_then(|c| c.get_string()).unwrap_or("").to_string();
-            let location = row.get(3).and_then(|c| c.get_string()).unwrap_or("").to_string();
-            let incident_date = row.get(4).and_then(|c| c.get_string()).unwrap_or("").to_string();
-            let coordinates = row.get(5).and_then(|c| c.get_string()).unwrap_or("").to_string();
-            let latitude = row.get(6).and_then(|c| c.get_float()).unwrap_or(0.0);
-            let longitude = row.get(7).and_then(|c| c.get_float()).unwrap_or(0.0);
-            let spill_status = row.get(8).and_then(|c| c.get_string()).unwrap_or("").to_string();
-            let description_of_spill_causes = row.get(9).and_then(|c| c.get_string()).unwrap_or("").to_string();
-            let estimated_qty_spilled_or_leaked = row.get(10).and_then(|c| c.get_float()).unwrap_or(0.0);
-            let severity = row.get(11).and_then(|c| c.get_string()).unwrap_or("").to_string();
-            let extent_of_pollution = row.get(12).and_then(|c| c.get_string()).unwrap_or("").to_string();
-            let precaution_measures = row.get(13).and_then(|c| c.get_string()).unwrap_or("").to_string();
-            let client_id = row.get(14).and_then(|c| c.get_string()).unwrap_or("").to_string();
-            let opl_oml_no = row.get(15).and_then(|c| c.get_int()).unwrap_or(0);
-            let date_of_incident_observed = row.get(16).and_then(|c| c.get_string()).unwrap_or("").to_string();
-            let date_of_incident_occurred = row.get(17).and_then(|c| c.get_string()).unwrap_or("").to_string();
-            let incident_cause = row.get(18).and_then(|c| c.get_string()).unwrap_or("").to_string();
-            let incident_type = row.get(19).and_then(|c| c.get_string()).unwrap_or("").to_string();
-            let nearest_town = row.get(20).and_then(|c| c.get_string()).unwrap_or("").to_string();
-            let operational_area = row.get(21).and_then(|c| c.get_string()).unwrap_or("").to_string();
-            let other_cause = row.get(22).and_then(|c| c.get_string()).unwrap_or("").to_string();
-            let other_type = row.get(23).and_then(|c| c.get_string()).unwrap_or("").to_string();
-            let state = row.get(24).and_then(|c| c.get_string()).unwrap_or("").to_string();
-            let time_of_incident_observed = row.get(25).and_then(|c| c.get_string()).unwrap_or("").to_string();
-            let time_of_incident_occurred = row.get(26).and_then(|c| c.get_string()).unwrap_or("").to_string();
-            let type_of_operation = row.get(27).and_then(|c| c.get_string()).unwrap_or("").to_string();
-            let coordinate_format = row.get(28).and_then(|c| c.get_string()).unwrap_or("").to_string();
-            let created_at = row.get(29).and_then(|c| c.get_string()).unwrap_or("").to_string();
-            let updated_at = row.get(30).and_then(|c| c.get_string()).unwrap_or("").to_string();
-
-            // Print the extracted data
-            println!("Row {}: {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {}",
-                row_index + 1, id, spill_serial_no, facility_or_equipment, location, incident_date, coordinates, latitude, longitude, spill_status, description_of_spill_causes, estimated_qty_spilled_or_leaked, severity, extent_of_pollution, precaution_measures, client_id, opl_oml_no, date_of_incident_observed, date_of_incident_occurred, incident_cause, incident_type, nearest_town, operational_area, other_cause, other_type, state, time_of_incident_observed, time_of_incident_occurred, type_of_operation, coordinate_format, created_at, updated_at);
-
-            // Write the row to the new workbook
-            let data_row = row_index as u32 + 1; // +1 to account for header row
-            worksheet.write_string(data_row, 0, &id)?;
-            worksheet.write_string(data_row, 1, &spill_serial_no)?;
-            worksheet.write_string(data_row, 2, &facility_or_equipment)?;
-            worksheet.write_string(data_row, 3, &location)?;
-            worksheet.write_string(data_row, 4, &incident_date)?;
-            worksheet.write_string(data_row, 5, &coordinates)?;
-            worksheet.write_number(data_row, 6, latitude)?;
-            worksheet.write_number(data_row, 7, longitude)?;
-            worksheet.write_string(data_row, 8, &spill_status)?;
-            worksheet.write_string(data_row, 9, &description_of_spill_causes)?;
-            worksheet.write_number(data_row, 10, estimated_qty_spilled_or_leaked)?;
-            worksheet.write_string(data_row, 11, &severity)?;
-            worksheet.write_string(data_row, 12, &extent_of_pollution)?;
-            worksheet.write_string(data_row, 13, &precaution_measures)?;
-            worksheet.write_string(data_row, 14, &client_id)?;
-            worksheet.write_number(data_row, 15, opl_oml_no as f64)?;
-            worksheet.write_string(data_row, 16, &date_of_incident_observed)?;
-            worksheet.write_string(data_row, 17, &date_of_incident_occurred)?;
-            worksheet.write_string(data_row, 18, &incident_cause)?;
-            worksheet.write_string(data_row, 19, &incident_type)?;
-            worksheet.write_string(data_row, 20, &nearest_town)?;
-            worksheet.write_string(data_row, 21, &operational_area)?;
-            worksheet.write_string(data_row, 22, &other_cause)?;
-            worksheet.write_string(data_row, 23, &other_type)?;
-            worksheet.write_string(data_row, 24, &state)?;
-            worksheet.write_string(data_row, 25, &time_of_incident_observed)?;
-            worksheet.write_string(data_row, 26, &time_of_incident_occurred)?;
-            worksheet.write_string(data_row, 27, &type_of_operation)?;
-            worksheet.write_string(data_row, 28, &coordinate_format)?;
-            worksheet.write_string(data_row, 29, &created_at)?;
-            worksheet.write_string(data_row, 30, &updated_at)?;
+            // Write data to new workbook
+            for (col_idx, data) in row_data.iter().enumerate() {
+                if let Ok(num_val) = data.parse::<f64>() {
+                    worksheet.write_number(row_index as u32, col_idx as u16, num_val)?;
+                } else {
+                    worksheet.write_string(row_index as u32, col_idx as u16, data)?;
+                }
+            }
         }
 
         // Save the new workbook with an absolute path to ensure we know where it's saved
-        let save_path = "c:\\Users\\bunak\\Development\\Rust\\xcel_operations\\loaded_register.xlsx";
+        let save_path = "c:\\Users\\bunak\\Development\\Rust\\xcel_operations\\loaded_register_dynamic.xlsx";
         println!("Saving file to: {}", save_path);
         new_workbook.save(save_path)?;
         println!("File save attempt completed");
     } else {
-        println!("Error: Worksheet 'Sheet1' not found. Check sheet names.");
+        println!("Error: Worksheet 'Oil_Spill_2013' not found. Check sheet names.");
         return Err("Worksheet not found".into());
     }
 
