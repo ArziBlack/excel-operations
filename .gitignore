@@ -2,3 +2,9 @@
 
 # Environment variables
 .env
+
+modified_data.xlsx
+output.xlsx
+spill_register.xlsx
+data.xlsx
+clean_up_status.xlsx
