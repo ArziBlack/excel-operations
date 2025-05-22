@@ -1,4 +1,4 @@
-use calamine::{open_workbook, Reader, Xlsx};
+use calamine::{Reader, Xlsx, open_workbook};
 use reqwest::Client;
 use serde_json::json;
 use std::error::Error;
@@ -21,36 +21,91 @@ async fn main() -> Result<(), Box<dyn Error>> {
         println!("Worksheet selected with {} rows", range.rows().count());
 
         // Read headers from the first row
-        let dynamic_headers: Vec<String> = range.rows().next().unwrap_or(&[]).iter().map(|cell| cell.to_string()).collect();
+        let dynamic_headers: Vec<String> = range
+            .rows()
+            .next()
+            .unwrap_or(&[])
+            .iter()
+            .map(|cell| cell.to_string())
+            .collect();
         println!("Headers read: {:?}", dynamic_headers);
 
         // Define expected field names from OilSpillIncident struct
         let expected_fields: Vec<&'static str> = vec![
-            "incident_oil_spill_ref_no", "e_page_code", "facility_equipment", "facility_category", 
-            "location", "closeby_facility", "area", "lga", "state", "coordinates_format", 
-            "latitude", "longitude", "date_of_incident_spill", "date_of_incident_spill_observed", 
-            "time_of_incident_spill", "time_of_incident_spill_observed", "date_spill_was_stopped", 
-            "date_spill_was_contained", "time_spill_was_contained", "oml_opl", 
-            "incident_cause_of_spill_or_leakage", "incident_type_spill_category", 
-            "description_of_spill_causes", "incident_spill_responsibility", "est_qty_spilled", 
-            "est_qty_recovered", "tiered_level", "clean_up_status", "clean_up_completion_date", 
-            "clean_up_completion_time", "clean_up_method", "post_clean_up_status", 
-            "evidence_of_clean_up", "evidence_of_clean_up_date", "evidence_of_clean_up_time", 
-            "post_clean_up_observation", "post_incident_impact", "post_incident_impact_description", 
-            "incident_investigation", "incident_investigation_date", "incident_investigation_time", 
-            "incident_investigation_team", "incident_investigation_team_leader", 
-            "incident_investigation_team_leader_phone", "incident_investigation_team_leader_email", 
-            "incident_investigation_team_members", "client_id", "client", "client_phone", 
-            "client_email", "client_address", "client_representative", 
-            "client_representative_phone", "client_representative_email", "client_representative_role", 
-            "client_representative_office_address", "contractor", "contractor_phone", 
-            "contractor_email", "contractor_address", "contractor_representative", 
-            "contractor_representative_phone", "contractor_representative_email", 
-            "contractor_representative_role", "contractor_representative_office_address", 
-            "financial_cost", "financial_currency", "financial_description", 
-            "financial_payment_status", "financial_payment_date", "financial_payment_time", 
-            "financial_payment_receipt", "financial_payment_receipt_date", 
-            "financial_payment_receipt_time"
+            "incident_oil_spill_ref_no",
+            "e_page_code",
+            "facility_equipment",
+            "facility_category",
+            "location",
+            "closeby_facility",
+            "area",
+            "lga",
+            "state",
+            "coordinates_format",
+            "latitude",
+            "longitude",
+            "date_of_incident_spill",
+            "date_of_incident_spill_observed",
+            "time_of_incident_spill",
+            "time_of_incident_spill_observed",
+            "date_spill_was_stopped",
+            "date_spill_was_contained",
+            "time_spill_was_contained",
+            "oml_opl",
+            "incident_cause_of_spill_or_leakage",
+            "incident_type_spill_category",
+            "description_of_spill_causes",
+            "incident_spill_responsibility",
+            "est_qty_spilled",
+            "est_qty_recovered",
+            "tiered_level",
+            "clean_up_status",
+            "clean_up_completion_date",
+            "clean_up_completion_time",
+            "clean_up_method",
+            "post_clean_up_status",
+            "evidence_of_clean_up",
+            "evidence_of_clean_up_date",
+            "evidence_of_clean_up_time",
+            "post_clean_up_observation",
+            "post_incident_impact",
+            "post_incident_impact_description",
+            "incident_investigation",
+            "incident_investigation_date",
+            "incident_investigation_time",
+            "incident_investigation_team",
+            "incident_investigation_team_leader",
+            "incident_investigation_team_leader_phone",
+            "incident_investigation_team_leader_email",
+            "incident_investigation_team_members",
+            "client_id",
+            "client",
+            "client_phone",
+            "client_email",
+            "client_address",
+            "client_representative",
+            "client_representative_phone",
+            "client_representative_email",
+            "client_representative_role",
+            "client_representative_office_address",
+            "contractor",
+            "contractor_phone",
+            "contractor_email",
+            "contractor_address",
+            "contractor_representative",
+            "contractor_representative_phone",
+            "contractor_representative_email",
+            "contractor_representative_role",
+            "contractor_representative_office_address",
+            "financial_cost",
+            "financial_currency",
+            "financial_description",
+            "financial_payment_status",
+            "financial_payment_date",
+            "financial_payment_time",
+            "financial_payment_receipt",
+            "financial_payment_receipt_date",
+            "financial_payment_receipt_time",
         ];
 
         // Find indices of matching headers (case-insensitive) with synonym support
@@ -151,7 +206,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
         let endpoint = "https://f3d-server.onrender.com/api/v1/spills";
 
         // Iterate through data rows and extract only matching fields
-        for (row_index, row) in range.rows().enumerate().skip(1) { // Skip header row
+        for (row_index, row) in range.rows().enumerate().skip(1) {
+            // Skip header row
             println!("Processing row {} with {} cells", row_index, row.len());
             let mut row_data = vec![];
             for &(orig_index, _) in &matching_indices {
@@ -171,11 +227,18 @@ async fn main() -> Result<(), Box<dyn Error>> {
             }
 
             // Send data to endpoint
-            match client.post(endpoint)
+            match client
+                .post(endpoint)
+                .query(&[("client_id", "680624347a2e786232986db6")])
                 .json(&data_obj)
                 .send()
-                .await {
-                Ok(response) => println!("Row {} sent successfully: {:?}", row_index, response.status()),
+                .await
+            {
+                Ok(response) => println!(
+                    "Row {} sent successfully: {:?}",
+                    row_index,
+                    response.status()
+                ),
                 Err(e) => println!("Error sending row {}: {}", row_index, e),
             }
         }
