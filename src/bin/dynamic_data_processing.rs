@@ -56,7 +56,7 @@ fn load_and_process_spill_data_dynamic() -> Result<(), Box<dyn Error>> {
             "Financial Cost", "Financial Currency", "Financial Description", 
             "Financial Payment Status", "Financial Payment Date", "Financial Payment Time", 
             "Financial Payment Receipt", "Financial Payment Receipt Date", 
-            "Financial Payment Receipt Time", "Created At", "Updated At"
+            "Financial Payment Receipt Time"
         ];
 
         // Find indices of matching headers (case-insensitive) with synonym support
