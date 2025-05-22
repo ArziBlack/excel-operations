@@ -41,9 +41,22 @@ fn load_and_process_spill_data_dynamic() -> Result<(), Box<dyn Error>> {
             "Type of Operation", "Coordinate Format", "Created At", "Updated At"
         ];
 
-        // Find indices of matching headers (case-insensitive)
+        // Find indices of matching headers (case-insensitive) with synonym support
         let matching_indices: Vec<(usize, String)> = dynamic_headers.iter().enumerate()
-            .filter(|(_, header)| expected_fields.iter().any(|f| f.to_lowercase() == header.trim().to_lowercase()))
+            .filter(|(_, header)| {
+                let header_lower = header.trim().to_lowercase();
+                expected_fields.iter().any(|f| {
+                    let f_lower = f.to_lowercase();
+                    // Direct match
+                    f_lower == header_lower ||
+                    // Synonym or partial match examples (expand this list as needed)
+                    (f_lower == "latitude" && header_lower.contains("lat")) ||
+                    (f_lower == "longitude" && header_lower.contains("long")) ||
+                    (f_lower == "incident_cause_of_spill_or_leakage" && header_lower.contains("cause")) ||
+                    (f_lower == "location" && header_lower.contains("location")) ||
+                    (f_lower == "state" && header_lower.contains("state"))
+                })
+            })
             .map(|(i, header)| (i, header.clone()))
             .collect();
         println!("Matching headers and indices: {:?}", matching_indices);
