@@ -28,3 +28,7 @@ path = "src/bin/spill_example.rs"
 [[bin]]
 name = "dynamic_spill_loader"
 path = "src/bin/dynamic_spill_loader.rs"
+
+[[bin]]
+name = "dynamic_data_processing"
+path = "src/bin/dynamic_data_processing.rs"

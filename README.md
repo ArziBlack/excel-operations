@@ -76,7 +76,7 @@ To specify custom field names to match with the struct:
 cargo run --bin dynamic_spill_loader "Field1" "Field2" "Field3"
 ```
 
-This will process the Excel file and create `loaded_register_dynamic.xlsx` with the extracted data.
+This will process the Excel file and create `loaded_register_dynamic.xlsx` with the extracted data. The loader now trims whitespace from Excel headers to improve matching accuracy with expected field names.
 
 ## Project Structure
 
