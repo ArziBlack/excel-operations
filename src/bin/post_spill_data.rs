@@ -201,51 +201,37 @@ async fn main() -> Result<(), Box<dyn Error>> {
             .collect();
         println!("Matching headers and indices: {:?}", matching_indices);
 
-        // Initialize HTTP client
         let client = Client::new();
         let endpoint = "https://f3d-server.onrender.com/api/v1/spills";
+        println!("Sending data to endpoint: {}", endpoint);
 
         // Iterate through data rows and extract only matching fields
-        for (row_index, row) in range.rows().enumerate().skip(1) {
-            // Skip header row
-            println!("Processing row {} with {} cells", row_index, row.len());
-            let mut row_data = vec![];
-            for &(orig_index, _) in &matching_indices {
-                if let Some(cell) = row.get(orig_index) {
-                    row_data.push(cell.to_string());
-                } else {
-                    row_data.push("".to_string());
+        for row in range.rows().skip(1) {
+            let mut row_data = serde_json::Map::new();
+            for (i, cell) in row.iter().enumerate() {
+                if i < expected_fields.len() {
+                    row_data.insert(expected_fields[i].to_string(), json!(cell.to_string()));
                 }
             }
-            println!("Extracted data for row {}: {:?}", row_index, row_data);
 
-            // Create JSON object for the row
-            let mut data_obj = json!({});
-            for (i, data) in row_data.iter().enumerate() {
-                let field_name = &matching_indices[i].1;
-                data_obj[field_name] = json!(data);
-            }
-
-            // Send data to endpoint
             match client
                 .post(endpoint)
                 .query(&[("client_id", "680624347a2e786232986db6")])
-                .json(&data_obj)
+                .json(&row_data)
                 .send()
                 .await
             {
                 Ok(response) => println!(
-                    "Row {} sent successfully: {:?}",
-                    row_index,
+                    "Row {:?} sent successfully: {:?}",
+                    row_data,
                     response.status()
                 ),
-                Err(e) => println!("Error sending row {}: {}", row_index, e),
+                Err(e) => println!("Error sending row {:?}: {}", row_data, e),
             }
         }
     } else {
-        println!("Error: Worksheet 'Oil_Spill_2013' not found. Check sheet names.");
+        println!("Error: Worksheet not found. Check sheet names.");
         return Err("Worksheet not found".into());
     }
-
     Ok(())
 }
